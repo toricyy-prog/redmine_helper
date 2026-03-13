@@ -70,6 +70,12 @@ async def run_analysis(
                 f"  - #{item['id']} {item['subject']} (유사도: {item['score']:.1%}){dup_flag}"
             )
 
+        # 6. Redmine 댓글 자동 작성 (Sprint 2 구현 예정)
+        # ⚠️  운영 안전을 위해 ENABLE_AUTO_COMMENT=true 로 명시 설정해야만 활성화됨
+        # if settings.enable_auto_comment and similar:
+        #     from app.services.comment_writer import write_comment
+        #     await write_comment(issue_id=issue_id, similar=similar, ai_summary=record.ai_summary)
+
     except Exception as e:
         logger.error(f"[분석 실패] 이슈 #{issue_id}: {e}")
         error_record = AnalysisHistory(
