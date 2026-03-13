@@ -2203,6 +2203,13 @@ Task 1 (JWT 인증 미들웨어)
 
 ---
 
+## 검증 결과
+
+- [코드 리뷰 보고서](sprint3/code-review.md)
+- [배포 가이드 및 검증 체크리스트](sprint3/deploy.md)
+
+---
+
 ## 다음 스프린트 준비 사항
 
 Sprint 3 완료 후 Sprint 4 착수 전 확인해야 할 사항:
