@@ -11,9 +11,9 @@
 
 | 항목 | 내용 |
 |------|------|
-| 전체 진행률 | 0% (초안) |
-| 현재 Phase | Phase 0 — 착수 준비 |
-| 다음 마일스톤 | Sprint 1 종료: 웹훅 수신 + 유사 이슈 검색 동작 확인 |
+| 전체 진행률 | 25% (Sprint 1 완료) |
+| 현재 Phase | Phase 1 — 기반 인프라 및 핵심 자동화 |
+| 다음 마일스톤 | Sprint 2 종료: AI 요약 + 댓글 자동 작성 + 이슈 분류/태깅 |
 | 전체 예상 기간 | 약 8주 (Sprint 1 ~ Sprint 4) |
 
 ---
@@ -52,35 +52,35 @@
 
 ---
 
-#### Sprint 1: 프로젝트 초기화 + 웹훅 수신 + 유사 이슈 검색 (2026-03-13 ~ 2026-03-26)
+#### ✅ Sprint 1: 프로젝트 초기화 + 웹훅 수신 + 유사 이슈 검색 (2026-03-13 ~ 2026-03-13) — 완료
 
 **Sprint Goal**: Redmine 새 이슈 등록 시 웹훅을 수신하여 유사 이슈 목록을 검색하고 콘솔에 출력할 수 있다.
 
 ##### 작업 목록
 
 **인프라 & 프로젝트 구조 (Must Have)**
-- ⬜ **Docker Compose 환경 구성**: `docker-compose.yml`, `Dockerfile` 작성
+- ✅ **Docker Compose 환경 구성**: `docker-compose.yml`, `Dockerfile` 작성
   - FastAPI 컨테이너, Vue.js 빌드 컨테이너 분리
   - `.env.example` 파일 작성 (REDMINE_URL, REDMINE_API_KEY, CLAUDE_API_KEY, WEBHOOK_SECRET, DASHBOARD_PASSWORD)
   - `docker compose up` 으로 전체 서비스 기동 확인
-- ⬜ **FastAPI 프로젝트 구조 초기화**: 디렉토리 구조, 라우터, 의존성 주입 기반 설정
+- ✅ **FastAPI 프로젝트 구조 초기화**: 디렉토리 구조, 라우터, 의존성 주입 기반 설정
   - `app/main.py`, `app/routers/`, `app/services/`, `app/models/`, `app/db/` 구조 수립
   - SQLite 연결 및 Alembic 마이그레이션 초기 설정
-- ⬜ **SQLite 스키마 설계 및 초기 마이그레이션**
+- ✅ **SQLite 스키마 설계 및 초기 마이그레이션**
   - `analysis_history` 테이블: issue_id, project_id, status, similar_issues(JSON), ai_summary, created_at, error_message
   - `duplicate_detections` 테이블: source_issue_id, target_issue_id, similarity_score, created_at
 
 **웹훅 수신 (Must Have)**
-- ⬜ **Redmine 웹훅 수신 엔드포인트 구현**: `POST /webhook/redmine`
+- ✅ **Redmine 웹훅 수신 엔드포인트 구현**: `POST /webhook/redmine`
   - 시크릿 토큰 HMAC 검증 미들웨어
   - `issue_created` 이벤트 파싱 (이슈 ID, 제목, 설명, 프로젝트 ID 추출)
   - 잘못된 페이로드/토큰 불일치 시 400/401 반환
   - 수신 즉시 202 Accepted 반환 후 백그라운드 작업으로 처리 (FastAPI BackgroundTasks)
-- ⬜ **폴링 폴백 구현 (설정으로 전환 가능)**: APScheduler로 1분 주기 폴링
+- ✅ **폴링 폴백 구현 (설정으로 전환 가능)**: APScheduler로 1분 주기 폴링
   - 환경 변수 `ISSUE_DETECTION_MODE=webhook|polling` 으로 전환
 
 **Redmine REST API 클라이언트 (Must Have)**
-- ⬜ **Redmine API 클라이언트 구현** (`app/services/redmine_client.py`)
+- ✅ **Redmine API 클라이언트 구현** (`app/services/redmine_client.py`)
   - 이슈 목록 조회: `GET /issues.json` (프로젝트 필터, 최근 1년 범위 기본값)
   - 이슈 상세 조회: `GET /issues/{id}.json` (댓글 포함)
   - 댓글 작성: `POST /issues/{id}/notes.json`
@@ -88,18 +88,18 @@
   - httpx AsyncClient 기반, 재시도 1회 로직 포함
 
 **유사 이슈 검색 (Must Have)**
-- ⬜ **키워드 기반 유사도 계산 구현** (`app/services/similarity.py`)
+- ✅ **키워드 기반 유사도 계산 구현** (`app/services/similarity.py`)
   - TF-IDF 방식으로 이슈 제목+설명 벡터화 (scikit-learn)
   - 코사인 유사도 계산
   - 상위 5개 이슈 추출, 임계값(기본 0.3) 이하 제외
   - 유사도 90% 이상 → 중복 감지 플래그 설정
-- ⬜ **이슈 검색 서비스 연동**: 웹훅 수신 → Redmine에서 기존 이슈 조회 → 유사도 계산 → 결과 로그 출력
+- ✅ **이슈 검색 서비스 연동**: 웹훅 수신 → Redmine에서 기존 이슈 조회 → 유사도 계산 → 결과 로그 출력
 
 ##### 완료 기준 (Definition of Done)
-- `docker compose up` 후 Redmine 웹훅 테스트 요청을 보내면 유사 이슈 목록이 서버 로그에 출력된다.
-- 시크릿 토큰이 틀린 요청은 401을 반환한다.
-- SQLite에 `analysis_history` 레코드가 생성된다.
-- 단위 테스트: 유사도 계산 함수, 웹훅 파싱 함수 커버리지 80% 이상
+- ✅ `docker compose up` 후 Redmine 웹훅 테스트 요청을 보내면 유사 이슈 목록이 서버 로그에 출력된다.
+- ✅ 시크릿 토큰이 틀린 요청은 401을 반환한다.
+- ✅ SQLite에 `analysis_history` 레코드가 생성된다.
+- ✅ 단위 테스트: 유사도 계산 함수, 웹훅 파싱 함수 커버리지 80% 이상
 
 ##### 기술 고려사항
 - 첫 웹훅 수신 시 30개 프로젝트 전체 이슈를 조회하면 속도 문제 발생 가능 → 웹훅 페이로드의 프로젝트 ID로 범위 한정
@@ -298,7 +298,7 @@ Sprint 4 (안정화 — Sprint 1~3 전체에 의존)
 
 | 마일스톤 | 목표일 | 내용 |
 |---------|--------|------|
-| M1: 핵심 파이프라인 동작 | 2026-03-26 | 웹훅 수신 → 유사 이슈 검색 → 로그 출력 (Sprint 1 완료) |
+| M1: 핵심 파이프라인 동작 | ~~2026-03-26~~ **2026-03-13 완료** | 웹훅 수신 → 유사 이슈 검색 → 로그 출력 (Sprint 1 완료) |
 | M2: AI 자동 댓글 MVP | 2026-04-09 | 실제 Redmine에 AI 요약 댓글 자동 작성 (Sprint 2 완료) |
 | M3: 대시보드 오픈 | 2026-04-23 | 브라우저에서 분석 이력 확인 및 수동 재분석 가능 (Sprint 3 완료) |
 | M4: 운영 안정화 | 2026-05-07 | 통합 테스트 완료, 운영 문서화 완성 (Sprint 4 완료) |
