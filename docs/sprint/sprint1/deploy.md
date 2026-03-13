@@ -172,8 +172,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 - ✅ `pytest -v` → 11개 테스트 전부 PASSED
 - ✅ `pytest --cov=app` → 커버리지 80% 이상
-- ⬜ `http://localhost:8000/docs` Swagger UI 접속
+- ✅ `http://localhost:8000/docs` Swagger UI 접속
 - ✅ 웹훅 정상 요청 → HTTP 202, 서버 로그에 유사 이슈 출력
 - ✅ 잘못된 토큰 요청 → HTTP 401 반환
 - ✅ SQLite `analysis_history` 레코드 생성 확인
-- ⬜ `ISSUE_DETECTION_MODE=polling` 시 1분마다 폴링 로그 출력
+- ✅ `ISSUE_DETECTION_MODE=polling` 시 1분마다 폴링 로그 출력
