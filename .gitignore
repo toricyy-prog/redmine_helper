@@ -1,6 +1,8 @@
 .env
 data/
 backend/.venv/
+backend/static/
+frontend/node_modules/
 backend/.env.test
 backend/test.db
 backend/local.db

@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     category_list: str = "버그,기능요청,문의,성능,보안"
     classification_threshold: float = 0.7
     redmine_category_field_id: str = ""
+    # Sprint 3 추가 — JWT 인증
+    jwt_secret_key: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24  # 24시간
 
     @property
     def categories(self) -> List[str]:
