@@ -31,7 +31,7 @@ class Settings(BaseSettings):
         return [c.strip() for c in self.category_list.split(",") if c.strip()]
 
     class Config:
-        env_file = ".env"
+        env_file = ("../.env", ".env")  # 루트 또는 backend/ 디렉토리 모두 탐색
 
 
 settings = Settings()
