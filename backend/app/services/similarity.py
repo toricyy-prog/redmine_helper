@@ -55,7 +55,7 @@ class SimilarityService:
                         "id": issue["id"],
                         "subject": issue.get("subject", ""),
                         "score": float(score),
-                        "is_duplicate": score >= self.duplicate_threshold,
+                        "is_duplicate": bool(score >= self.duplicate_threshold),
                     }
                 )
 

@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic_settings import BaseSettings
 
 
@@ -15,6 +17,14 @@ class Settings(BaseSettings):
     max_similar_issues: int = 5
     issue_search_days: int = 365
     database_url: str = "sqlite:////data/redmine_helper.db"
+    # Sprint 2 추가
+    category_list: str = "버그,기능요청,문의,성능,보안"
+    classification_threshold: float = 0.7
+    redmine_category_field_id: str = ""
+
+    @property
+    def categories(self) -> List[str]:
+        return [c.strip() for c in self.category_list.split(",") if c.strip()]
 
     class Config:
         env_file = ".env"

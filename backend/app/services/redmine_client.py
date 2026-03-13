@@ -53,3 +53,20 @@ class RedmineClient:
                 except (httpx.HTTPError, httpx.TimeoutException):
                     if attempt == 1:
                         raise
+
+    async def update_custom_field(
+        self, issue_id: int, custom_field_id: int, value: str
+    ) -> None:
+        """이슈 커스텀 필드 업데이트"""
+        body = {"issue": {"custom_fields": [{"id": custom_field_id, "value": value}]}}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for attempt in range(2):
+                try:
+                    r = await client.put(
+                        f"{self.base_url}/issues/{issue_id}.json", json=body, headers=self.headers
+                    )
+                    r.raise_for_status()
+                    return
+                except (httpx.HTTPError, httpx.TimeoutException):
+                    if attempt == 1:
+                        raise

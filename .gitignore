@@ -1,5 +1,9 @@
 .env
 data/
+backend/.venv/
+backend/.env.test
+backend/test.db
+backend/local.db
 __pycache__/
 *.pyc
 *.pyo
