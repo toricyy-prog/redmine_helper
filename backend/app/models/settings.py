@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String, Text
+from sqlalchemy import Boolean, Column, Float, Integer, Text
 
 from app.db.session import Base
 
@@ -11,4 +11,4 @@ class AppSettings(Base):
     duplicate_threshold = Column(Float, default=0.9)
     max_similar_issues = Column(Integer, default=5)
     category_list = Column(Text, default="")  # 쉼표 구분 카테고리 목록
-    enable_auto_comment = Column(String(10), default="false")
+    enable_auto_comment = Column(Boolean, default=False)

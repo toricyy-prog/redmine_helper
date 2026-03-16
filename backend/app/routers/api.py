@@ -132,9 +132,12 @@ async def _run_reanalysis(issue_id: int, project_id: int):
     """재분석용 내부 함수 — Redmine에서 이슈 정보 조회 후 파이프라인 실행"""
     import logging
 
+    from app.db.session import SessionLocal
+    from app.models.analysis import AnalysisHistory
     from app.services.analysis_pipeline import run_analysis
     from app.services.redmine_client import RedmineClient
 
+    _logger = logging.getLogger(__name__)
     try:
         client = RedmineClient()
         issue = await client.get_issue(issue_id)
@@ -146,7 +149,21 @@ async def _run_reanalysis(issue_id: int, project_id: int):
             force_comment=True,  # 기존 댓글 있어도 재작성
         )
     except Exception as e:
-        logging.getLogger(__name__).error(f"[재분석 실패] 이슈 #{issue_id}: {e}")
+        _logger.error(f"[재분석 실패] 이슈 #{issue_id}: {e}")
+        db = SessionLocal()
+        try:
+            record = AnalysisHistory(
+                issue_id=issue_id,
+                project_id=project_id,
+                status="failed",
+                error_message=f"RERUN_ERROR: {e}",
+            )
+            db.add(record)
+            db.commit()
+        except Exception as db_err:
+            _logger.error(f"[재분석] DB 실패 기록 오류: {db_err}")
+        finally:
+            db.close()
 
 
 # ── 설정 ─────────────────────────────────────────────────────────────────────
@@ -174,7 +191,7 @@ async def get_settings(
         duplicate_threshold=s.duplicate_threshold,
         max_similar_issues=s.max_similar_issues,
         category_list=[c.strip() for c in s.category_list.split(",") if c.strip()],
-        enable_auto_comment=s.enable_auto_comment == "true",
+        enable_auto_comment=bool(s.enable_auto_comment),
     )
 
 
@@ -195,7 +212,7 @@ async def update_settings(
     if req.category_list is not None:
         s.category_list = ",".join(req.category_list)
     if req.enable_auto_comment is not None:
-        s.enable_auto_comment = "true" if req.enable_auto_comment else "false"
+        s.enable_auto_comment = req.enable_auto_comment
     db.commit()
     db.refresh(s)
     return SettingsResponse(
@@ -203,5 +220,5 @@ async def update_settings(
         duplicate_threshold=s.duplicate_threshold,
         max_similar_issues=s.max_similar_issues,
         category_list=[c.strip() for c in s.category_list.split(",") if c.strip()],
-        enable_auto_comment=s.enable_auto_comment == "true",
+        enable_auto_comment=bool(s.enable_auto_comment),
     )

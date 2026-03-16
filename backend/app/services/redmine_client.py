@@ -28,6 +28,23 @@ class RedmineClient:
                         raise
         return []
 
+    async def get_recent_issues(self, since: datetime) -> list[dict]:
+        """특정 시각 이후 생성된 모든 프로젝트의 이슈 목록 조회 (폴링용)"""
+        since_str = since.strftime("%Y-%m-%dT%H:%M:%SZ")
+        params = {"created_on": f">={since_str}", "limit": 100, "status_id": "*"}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for attempt in range(2):
+                try:
+                    r = await client.get(
+                        f"{self.base_url}/issues.json", params=params, headers=self.headers
+                    )
+                    r.raise_for_status()
+                    return r.json().get("issues", [])
+                except (httpx.HTTPError, httpx.TimeoutException):
+                    if attempt == 1:
+                        raise
+        return []
+
     async def get_issue(self, issue_id: int) -> dict:
         """이슈 상세 (댓글 포함) 조회"""
         async with httpx.AsyncClient(timeout=10.0) as client:

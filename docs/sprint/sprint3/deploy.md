@@ -13,8 +13,15 @@
   - test_api_analysis.py (5개) — 분석 이력 목록/상세 API
   - test_api_duplicates_stats.py (4개) — 중복 감지/통계/재분석 API
   - test_api_settings.py (3개) — 설정 조회/수정 API
+  - test_main.py — 헬스체크 강화 (DB/Redmine/Claude 상태 포함)
 - ✅ 프론트엔드 TypeScript 빌드 성공 (`npm run build` → `backend/static/` 출력)
 - ✅ `GET /api/analysis` 토큰 없이 접근 → 401 반환 확인
+- ✅ 폴링 모드 — `poll_new_issues()` 실제 Redmine API 조회 + 분석 파이프라인 실행
+- ✅ 재분석 실패 시 DB에 `status="failed"` 기록
+- ✅ `/health` 엔드포인트 — DB/Redmine/Claude 설정 상태 포함
+- ✅ JSON 구조화 로그 (time/level/logger/message 필드)
+- ✅ 분석 이력 90일 자동 정리 (매일 자정 APScheduler 실행)
+- ✅ `enable_auto_comment` DB 컬럼 Boolean 타입으로 변경 (마이그레이션 0004)
 
 ---
 
@@ -27,13 +34,15 @@ cd backend
 .venv\Scripts\pip install python-jose[cryptography]==3.3.0
 ```
 
-### 2. Alembic 마이그레이션 (app_settings 테이블 추가)
+### 2. Alembic 마이그레이션 (app_settings 테이블 + Boolean 컬럼 변경)
 
 ```powershell
 # 로컬 환경 (local.db 사용)
 $env:DATABASE_URL = "sqlite:///./local.db"
 cd backend
 .venv\Scripts\alembic upgrade head
+# 0003: app_settings 테이블 생성
+# 0004: enable_auto_comment 컬럼 String → Boolean 변경
 ```
 
 Docker 환경:
