@@ -47,6 +47,15 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString('ko-KR')
 }
 
+function parseErrorMessage(raw: string | null | undefined): string {
+  if (!raw) return ''
+  if (raw.startsWith('REDMINE_API_ERROR')) return `Redmine API 연결 실패: ${raw.replace('REDMINE_API_ERROR: ', '')}`
+  if (raw.startsWith('CLAUDE_API_ERROR')) return `AI 요약 실패: ${raw.replace('CLAUDE_API_ERROR: ', '')}`
+  if (raw.startsWith('RERUN_ERROR')) return `재분석 실패: ${raw.replace('RERUN_ERROR: ', '')}`
+  if (raw.startsWith('UNKNOWN_ERROR')) return `알 수 없는 오류: ${raw.replace('UNKNOWN_ERROR: ', '')}`
+  return raw
+}
+
 onMounted(loadAnalysis)
 </script>
 
@@ -80,7 +89,7 @@ onMounted(loadAnalysis)
           <span>{{ formatDate(analysis.created_at) }}</span>
         </div>
         <div v-if="analysis.error_message" class="error-message">
-          오류: {{ analysis.error_message }}
+          오류: {{ parseErrorMessage(analysis.error_message) }}
         </div>
       </div>
 

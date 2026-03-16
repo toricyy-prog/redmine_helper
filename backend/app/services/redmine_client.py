@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 
 import httpx
@@ -57,10 +58,10 @@ class RedmineClient:
             return r.json().get("issue", {})
 
     async def post_comment(self, issue_id: int, comment: str) -> None:
-        """이슈에 댓글 작성"""
+        """이슈에 댓글 작성 (3회 재시도 + 지수 백오프)"""
         body = {"issue": {"notes": comment}}
         async with httpx.AsyncClient(timeout=10.0) as client:
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
                     r = await client.put(
                         f"{self.base_url}/issues/{issue_id}.json", json=body, headers=self.headers
@@ -68,8 +69,9 @@ class RedmineClient:
                     r.raise_for_status()
                     return
                 except (httpx.HTTPError, httpx.TimeoutException):
-                    if attempt == 1:
+                    if attempt == 2:
                         raise
+                    await asyncio.sleep(2 ** attempt)
 
     async def update_custom_field(
         self, issue_id: int, custom_field_id: int, value: str
