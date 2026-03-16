@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime, timedelta
 
 import httpx
 from sqlalchemy.orm import Session
@@ -7,11 +8,14 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.session import SessionLocal
 from app.models.analysis import AnalysisHistory, DuplicateDetection
+from app.models.issue_cache import IssueCache
 from app.services.classifier import Classifier
 from app.services.claude_client import ClaudeClient
 from app.services.comment_writer import CommentWriter
 from app.services.redmine_client import RedmineClient
 from app.services.similarity import SimilarityService
+
+CACHE_TTL_HOURS = 1
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +70,7 @@ async def run_analysis(
                 similar_with_comments = []
                 for item in similar[:3]:
                     try:
-                        detail = await client.get_issue(item["id"])
+                        detail = await _get_issue_with_cache(item["id"], client, _db)
                         comments = [
                             j.get("notes", "")
                             for j in detail.get("journals", [])
@@ -155,6 +159,52 @@ async def run_analysis(
         finally:
             if db is None:
                 _db.close()
+
+
+async def _get_issue_with_cache(issue_id: int, client: RedmineClient, db: Session) -> dict:
+    """이슈 상세 조회 — 1시간 이내 캐시가 있으면 DB에서 반환, 없으면 Redmine API 호출 후 캐시 저장"""
+    cutoff = datetime.utcnow() - timedelta(hours=CACHE_TTL_HOURS)
+    cached = db.query(IssueCache).filter(
+        IssueCache.issue_id == issue_id,
+        IssueCache.cached_at >= cutoff,
+    ).first()
+
+    if cached:
+        logger.debug(f"[Cache] 이슈 #{issue_id} 캐시 히트")
+        return {
+            "id": cached.issue_id,
+            "subject": cached.subject or "",
+            "description": cached.description or "",
+            "journals": cached.journals or [],
+        }
+
+    # 캐시 미스 — Redmine API 호출
+    detail = await client.get_issue(issue_id)
+    _upsert_issue_cache(db, issue_id, detail)
+    return detail
+
+
+def _upsert_issue_cache(db: Session, issue_id: int, detail: dict) -> None:
+    """이슈 캐시 upsert (있으면 갱신, 없으면 삽입)"""
+    try:
+        existing = db.query(IssueCache).filter(IssueCache.issue_id == issue_id).first()
+        if existing:
+            existing.subject = detail.get("subject", "")
+            existing.description = detail.get("description", "")
+            existing.journals = detail.get("journals", [])
+            existing.cached_at = datetime.utcnow()
+        else:
+            db.add(IssueCache(
+                issue_id=issue_id,
+                subject=detail.get("subject", ""),
+                description=detail.get("description", ""),
+                journals=detail.get("journals", []),
+            ))
+        db.commit()
+        logger.debug(f"[Cache] 이슈 #{issue_id} 캐시 저장")
+    except Exception as e:
+        logger.warning(f"[Cache] 이슈 #{issue_id} 캐시 저장 실패: {e}")
+        db.rollback()
 
 
 def _save_error(db: Session, issue_id: int, project_id: int, error_message: str) -> None:
